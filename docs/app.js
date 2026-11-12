@@ -3,13 +3,7 @@ let userId = null;
 let authToken = null;
 let currentRole = null;
 
-// Local backend for development and Render backend for GitHub Pages
-const API_URL =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1"
-        ? window.location.origin
-        : "https://leave-management-1-2w2y.onrender.com";
-
+const API_URL = "https://leave-management-1-2w2y.onrender.com";
 // ================= COMMON FUNCTIONS =================
 
 function showMessage(elementId, message) {
@@ -615,7 +609,6 @@ function renderStaffLeaveRequests(leaves) {
                         pending
                         ? `
                             <div class="action-buttons">
-
                                 <button type="button"
                                     class="btn approve-btn"
                                     data-leave-id="${escapeHTML(leave._id)}"
@@ -629,7 +622,6 @@ function renderStaffLeaveRequests(leaves) {
                                     data-status="Rejected">
                                     Reject
                                 </button>
-
                             </div>
                         `
                         : "-"
