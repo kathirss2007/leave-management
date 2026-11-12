@@ -1,224 +1,304 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leave Management System</title>
+    <title>Student Leave Management System</title>
     <link rel="stylesheet" href="style.css">
     <script src="app.js" defer></script>
 </head>
 
 <body>
     <div class="container">
-        <h1>Leave Management System</h1>
 
-        <!-- Login Section -->
-        <div id="login-section" class="form-section">
-            <h2>Login</h2>
+        <header>
+            <h1>Student Leave Management System</h1>
+
+            <button type="button" id="logout-button"
+                class="btn" style="display: none;">
+                Logout
+            </button>
+        </header>
+
+        <!-- LOGIN -->
+        <section id="login-section" class="form-section">
+            <h2>Student / Staff Login</h2>
 
             <form id="login-form">
                 <label for="email">Email:</label>
-                <input
-                    type="email"
-                    id="email"
-                    placeholder="Enter your email"
-                    required
-                >
+                <input type="email" id="email"
+                    placeholder="Enter your email" required>
 
                 <label for="password">Password:</label>
-                <input
-                    type="password"
-                    id="password"
-                    placeholder="Enter your password"
-                    required
-                >
+                <input type="password" id="password"
+                    placeholder="Enter your password" required>
 
                 <button type="submit" class="btn">Login</button>
             </form>
 
             <p>
                 Don't have an account?
-                <button
-                    type="button"
-                    id="show-registration"
-                    class="link-btn"
-                >
-                    Create User
+                <button type="button" id="show-registration"
+                    class="link-btn">
+                    Create Student Account
                 </button>
             </p>
-        </div>
+        </section>
 
-        <!-- Registration Section -->
-        <div
-            id="registration-section"
-            class="form-section"
-            style="display: none;"
-        >
-            <h2>Create User</h2>
+        <!-- STUDENT REGISTRATION -->
+        <section id="registration-section"
+            class="form-section" style="display: none;">
+
+            <h2>Student Registration</h2>
 
             <form id="registration-form">
-                <label for="username">Username:</label>
-                <input
-                    type="text"
-                    id="username"
-                    placeholder="Enter username"
-                    required
-                >
+
+                <label for="username">Student Name:</label>
+                <input type="text" id="username"
+                    placeholder="Enter student name" required>
 
                 <label for="reg-email">Email:</label>
-                <input
-                    type="email"
-                    id="reg-email"
-                    placeholder="Enter email"
-                    required
-                >
+                <input type="email" id="reg-email"
+                    placeholder="Enter email" required>
 
                 <label for="reg-password">Password:</label>
-                <input
-                    type="password"
-                    id="reg-password"
-                    placeholder="Create password"
-                    required
-                >
+                <input type="password" id="reg-password"
+                    placeholder="Create password" required>
 
-                <label for="roll-number">Roll Number:</label>
-                <input
-                    type="text"
-                    id="roll-number"
-                    placeholder="Enter roll number"
-                    required
-                >
+                <label for="roll-number">Register Number:</label>
+                <input type="text" id="roll-number"
+                    placeholder="Enter register number" required>
 
-                <label for="casual-leave">Initial Casual Leave:</label>
-                <input
-                    type="number"
-                    id="casual-leave"
-                    value="10"
-                    min="0"
-                    step="1"
-                    required
-                >
-
-                <label for="medical-leave">Initial Medical Leave:</label>
-                <input
-                    type="number"
-                    id="medical-leave"
-                    value="10"
-                    min="0"
-                    step="1"
-                    required
-                >
-
-                <button type="submit" class="btn">Register</button>
+                <button type="submit" class="btn">
+                    Register
+                </button>
             </form>
 
             <p>
                 Already have an account?
-                <button
-                    type="button"
-                    id="show-login"
-                    class="link-btn"
-                >
+                <button type="button" id="show-login"
+                    class="link-btn">
                     Login
                 </button>
             </p>
 
             <div id="registration-response" role="status"></div>
-        </div>
+        </section>
 
-        <!-- Leave Balance Section -->
-        <div
-            id="balance-section"
-            class="form-section"
-            style="display: none;"
-        >
-            <h2>Leave Balance</h2>
+        <!-- STUDENT DASHBOARD -->
+        <section id="balance-section"
+            class="form-section" style="display: none;">
+
+            <h2>Student Dashboard</h2>
 
             <p>
-                Welcome, <span id="username-display"></span>
+                Welcome,
+                <strong id="username-display"></strong>
             </p>
 
             <p>
-                Roll Number:
-                <span id="roll-number-display"></span>
+                Register Number:
+                <strong id="roll-number-display"></strong>
             </p>
+
+            <h3>Available Leave Balance</h3>
 
             <div id="leave-balance">
+
                 <p>
                     Casual Leave:
-                    <span id="casual-leave-display">—</span>
+                    <strong id="casual-leave-display">10</strong>
+                    Days
                 </p>
 
                 <p>
                     Medical Leave:
-                    <span id="medical-leave-display">—</span>
+                    <strong id="medical-leave-display">10</strong>
+                    Days
                 </p>
+
             </div>
 
-            <button
-                type="button"
-                id="refresh-balance"
-                class="btn"
-            >
+            <button type="button" id="refresh-balance"
+                class="btn">
                 Refresh Balance
             </button>
+        </section>
 
-            <button
-                type="button"
-                id="logout-button"
-                class="btn"
-                style="display: none;"
-            >
-                Logout
-            </button>
-        </div>
+        <!-- STUDENT APPLY FOR LEAVE -->
+        <section id="apply-leave-section"
+            class="form-section" style="display: none;">
 
-        <!-- Apply for Leave Section -->
-        <div
-            id="apply-leave-section"
-            class="form-section"
-            style="display: none;"
-        >
             <h2>Apply for Leave</h2>
 
             <form id="leave-form">
+
                 <label for="leave-type">Leave Type:</label>
                 <select id="leave-type" required>
-                    <option value="casual">Casual</option>
-                    <option value="medical">Medical</option>
+                    <option value="casual">Casual Leave</option>
+                    <option value="medical">Medical Leave</option>
                 </select>
 
-                <label for="leave-days">Number of Days:</label>
-                <input
-                    type="number"
-                    id="leave-days"
-                    min="1"
-                    step="1"
-                    required
-                >
+                <label for="leave-start-date">Start Date:</label>
+                <input type="date" id="leave-start-date" required>
+
+                <label for="leave-end-date">End Date:</label>
+                <input type="date" id="leave-end-date" required>
 
                 <label for="leave-reason">Reason for Leave:</label>
-                <input
-                    type="text"
-                    id="leave-reason"
-                    placeholder="Enter reason"
-                >
+                <textarea id="leave-reason"
+                    placeholder="Enter reason for leave"
+                    rows="4" required></textarea>
 
                 <button type="submit" class="btn">
-                    Apply Leave
+                    Submit Leave Request
                 </button>
+
             </form>
+        </section>
+
+        <!-- STUDENT LEAVE HISTORY -->
+        <section id="leave-history-section"
+            class="form-section" style="display: none;">
+
+            <h2>My Leave Requests</h2>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Leave Type</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Days</th>
+                            <th>Reason</th>
+                            <th>Approval Status</th>
+                            <th>Reviewed Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="leave-history-body">
+                        <tr>
+                            <td colspan="7">
+                                No leave requests found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- STAFF DASHBOARD -->
+        <section id="staff-dashboard-section"
+            class="form-section" style="display: none;">
+
+            <h2>Staff Dashboard</h2>
+
+            <p>
+                Welcome,
+                <strong id="staff-username-display"></strong>
+            </p>
+
+            <h3>Dashboard Overview</h3>
+
+            <div class="dashboard-stats">
+
+                <div class="stat-card">
+                    <h4>Total Students</h4>
+                    <p id="total-students">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Pending Requests</h4>
+                    <p id="pending-count">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Approved Requests</h4>
+                    <p id="approved-count">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Rejected Requests</h4>
+                    <p id="rejected-count">0</p>
+                </div>
+
+            </div>
+
+            <button type="button" id="refresh-staff"
+                class="btn">
+                Refresh Dashboard
+            </button>
+
+            <!-- STUDENT DETAILS -->
+            <h3>Student Details</h3>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Register Number</th>
+                            <th>Casual Leave</th>
+                            <th>Medical Leave</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="staff-students-body">
+                        <tr>
+                            <td colspan="5">
+                                No student details found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- STAFF APPROVAL SECTION -->
+            <h3>Student Leave Approval Requests</h3>
+
+            <p>
+                Check student leave applications and approve or reject them.
+            </p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Register Number</th>
+                            <th>Leave Type</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Days</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Reviewed Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="staff-leaves-body">
+                        <tr>
+                            <td colspan="10">
+                                No leave requests found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- RESPONSE MESSAGE -->
+        <div id="response-message"
+            role="status" aria-live="polite">
         </div>
 
-        <!-- General Response Message -->
-        <div
-            id="response-message"
-            role="status"
-            aria-live="polite"
-        ></div>
     </div>
 </body>
 
 </html>
-```
