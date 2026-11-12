@@ -1,37 +1,82 @@
+
 let userId = null;
+let authToken = null;
+let currentRole = null;
 
-// Show a message
+const API_URL = window.location.origin;
+
+// ================= COMMON FUNCTIONS =================
+
 function showMessage(elementId, message) {
-    document.getElementById(elementId).innerText = message;
+    const element = document.getElementById(elementId);
+    if (element) element.innerText = message;
 }
 
-// Show registration form
+function showElement(id) {
+    const element = document.getElementById(id);
+    if (element) element.style.display = "block";
+}
+
+function hideElement(id) {
+    const element = document.getElementById(id);
+    if (element) element.style.display = "none";
+}
+
+function getAuthHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${authToken}`
+    };
+}
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[char]);
+}
+
+function formatDate(date) {
+    if (!date) return "-";
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) return "-";
+
+    return parsed.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
+}
+
+// ================= FORM NAVIGATION =================
+
 function showRegistrationForm() {
-    document.getElementById("login-section").style.display = "none";
-    document.getElementById("registration-section").style.display = "block";
+    hideElement("login-section");
+    showElement("registration-section");
+    showMessage("registration-response", "");
 }
 
-// Show login form
 function showLoginForm() {
-    document.getElementById("registration-section").style.display = "none";
-    document.getElementById("login-section").style.display = "block";
+    hideElement("registration-section");
+    showElement("login-section");
 }
 
-// User registration
+// ================= STUDENT REGISTRATION =================
+
 async function registerUser(event) {
     event.preventDefault();
 
     const username = document.getElementById("username").value.trim();
     const email = document.getElementById("reg-email").value.trim();
-
-    // Correct registration password ID
     const password = document.getElementById("reg-password").value;
-
     const rollNumber = document.getElementById("roll-number").value.trim();
-    const casualLeave = Number(document.getElementById("casual-leave").value);
-    const medicalLeave = Number(document.getElementById("medical-leave").value);
 
-    if (!username || !email || !password.trim() || !rollNumber) {
+    if (!username || !email || !password || !rollNumber) {
         showMessage(
             "registration-response",
             "Please fill in all required fields."
@@ -42,7 +87,7 @@ async function registerUser(event) {
     if (password.length < 6) {
         showMessage(
             "registration-response",
-            "Password must be at least 6 characters long."
+            "Password must contain at least 6 characters."
         );
         return;
     }
@@ -51,11 +96,13 @@ async function registerUser(event) {
         '#registration-form button[type="submit"]'
     );
 
-    registerButton.disabled = true;
-    registerButton.innerText = "Registering...";
+    if (registerButton) {
+        registerButton.disabled = true;
+        registerButton.innerText = "Registering...";
+    }
 
     try {
-        const response = await fetch("/api/register", {
+        const response = await fetch(`${API_URL}/api/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -64,9 +111,7 @@ async function registerUser(event) {
                 username,
                 email,
                 password,
-                rollNumber,
-                casualLeave,
-                medicalLeave
+                rollNumber
             })
         });
 
@@ -80,13 +125,13 @@ async function registerUser(event) {
             return;
         }
 
-        showMessage(
-            "registration-response",
-            "Registration successful! Please log in."
-        );
-
         document.getElementById("registration-form").reset();
         document.getElementById("email").value = email;
+
+        showMessage(
+            "registration-response",
+            "Student registration successful! Please login."
+        );
 
         showLoginForm();
 
@@ -95,42 +140,39 @@ async function registerUser(event) {
 
         showMessage(
             "registration-response",
-            "Cannot connect to server. Check the server and try again."
+            "Cannot connect to server."
         );
-
     } finally {
-        registerButton.disabled = false;
-        registerButton.innerText = "Register";
+        if (registerButton) {
+            registerButton.disabled = false;
+            registerButton.innerText = "Register";
+        }
     }
 }
 
-// User login
+// ================= LOGIN =================
+
 async function loginUser(event) {
     event.preventDefault();
 
     const email = document.getElementById("email").value.trim();
-
-    // Correct login password ID
     const password = document.getElementById("password").value;
 
-    if (!email || !password.trim()) {
+    if (!email || !password) {
         showMessage(
             "response-message",
-            "Please enter both email and password."
+            "Please enter email and password."
         );
         return;
     }
 
     try {
-        const response = await fetch("/api/login", {
+        const response = await fetch(`${API_URL}/api/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                email,
-                password
-            })
+            body: JSON.stringify({ email, password })
         });
 
         const data = await response.json();
@@ -143,77 +185,155 @@ async function loginUser(event) {
             return;
         }
 
+        if (!data.token || !data.userId || !data.role) {
+            showMessage(
+                "response-message",
+                "Login response is incomplete. Check backend."
+            );
+            return;
+        }
+
+        if (!["student", "staff", "admin"].includes(data.role)) {
+            showMessage(
+                "response-message",
+                "Invalid account role."
+            );
+            return;
+        }
+
         userId = data.userId;
+        authToken = data.token;
+        currentRole = data.role;
 
-        document.getElementById("username-display").innerText =
-            data.username || "";
+        hideElement("login-section");
+        hideElement("registration-section");
+        showElement("logout-button");
 
-        document.getElementById("roll-number-display").innerText =
-            data.rollNumber || "";
+        // ================= STUDENT LOGIN =================
 
-        document.getElementById("casual-leave-display").innerText =
-            data.casualLeave ?? 0;
+        if (currentRole === "student") {
 
-        document.getElementById("medical-leave-display").innerText =
-            data.medicalLeave ?? 0;
+            hideElement("staff-dashboard-section");
 
-        document.getElementById("login-section").style.display = "none";
-        document.getElementById("registration-section").style.display = "none";
-        document.getElementById("balance-section").style.display = "block";
-        document.getElementById("apply-leave-section").style.display = "block";
-        document.getElementById("logout-button").style.display = "inline-block";
+            showElement("balance-section");
+            showElement("apply-leave-section");
+            showElement("leave-history-section");
 
-        showMessage(
-            "response-message",
-            data.message || "Login successful."
-        );
+            document.getElementById("username-display").innerText =
+                data.username || "";
+
+            document.getElementById("roll-number-display").innerText =
+                data.rollNumber || "";
+
+            document.getElementById("casual-leave-display").innerText =
+                data.casualLeave ?? 10;
+
+            document.getElementById("medical-leave-display").innerText =
+                data.medicalLeave ?? 10;
+
+            await refreshLeaveBalance();
+            await loadLeaveHistory();
+
+            showMessage(
+                "response-message",
+                "Student login successful."
+            );
+        }
+
+        // ================= STAFF / ADMIN LOGIN =================
+
+        else {
+
+            hideElement("balance-section");
+            hideElement("apply-leave-section");
+            hideElement("leave-history-section");
+
+            showElement("staff-dashboard-section");
+
+            document.getElementById("staff-username-display").innerText =
+                data.username || "";
+
+            await loadStaffDashboard();
+
+            showMessage(
+                "response-message",
+                "Staff login successful."
+            );
+        }
 
     } catch (error) {
         console.error("Login error:", error);
 
         showMessage(
             "response-message",
-            "Cannot connect to server. Check the server and try again."
+            "Cannot connect to server."
         );
     }
 }
 
-// User logout
+// ================= LOGOUT =================
+
 function logoutUser() {
     userId = null;
+    authToken = null;
+    currentRole = null;
 
-    document.getElementById("balance-section").style.display = "none";
-    document.getElementById("apply-leave-section").style.display = "none";
-    document.getElementById("logout-button").style.display = "none";
-    document.getElementById("login-section").style.display = "block";
-    document.getElementById("registration-section").style.display = "none";
+    hideElement("balance-section");
+    hideElement("apply-leave-section");
+    hideElement("leave-history-section");
+    hideElement("staff-dashboard-section");
+    hideElement("logout-button");
 
-    document.getElementById("login-form").reset();
-    document.getElementById("leave-form").reset();
+    showElement("login-section");
+    hideElement("registration-section");
+
+    document.getElementById("login-form")?.reset();
+    document.getElementById("registration-form")?.reset();
+    document.getElementById("leave-form")?.reset();
 
     document.getElementById("username-display").innerText = "";
     document.getElementById("roll-number-display").innerText = "";
-    document.getElementById("casual-leave-display").innerText = "0";
-    document.getElementById("medical-leave-display").innerText = "0";
+    document.getElementById("staff-username-display").innerText = "";
+
+    document.getElementById("casual-leave-display").innerText = "10";
+    document.getElementById("medical-leave-display").innerText = "10";
+
+    document.getElementById("leave-history-body").innerHTML = `
+        <tr><td colspan="7">No leave requests found.</td></tr>
+    `;
+
+    document.getElementById("staff-students-body").innerHTML = `
+        <tr><td colspan="5">No student details found.</td></tr>
+    `;
+
+    document.getElementById("staff-leaves-body").innerHTML = `
+        <tr><td colspan="10">No leave requests found.</td></tr>
+    `;
 
     showMessage("response-message", "");
 }
 
-// Refresh leave balance
+// ================= REFRESH STUDENT BALANCE =================
+
 async function refreshLeaveBalance() {
-    if (!userId) {
-        showMessage("response-message", "Please log in first.");
+    if (!userId || !authToken || currentRole !== "student") {
         return;
     }
 
     try {
-        const response = await fetch(`/api/leave-balance/${userId}`);
+        const response = await fetch(
+            `${API_URL}/api/leave-balance/${userId}`,
+            {
+                headers: getAuthHeaders()
+            }
+        );
+
         const data = await response.json();
 
         if (!response.ok) {
             showMessage(
                 "response-message",
-                data.message || "Could not get balance."
+                data.message || "Could not get leave balance."
             );
             return;
         }
@@ -224,49 +344,69 @@ async function refreshLeaveBalance() {
         document.getElementById("medical-leave-display").innerText =
             data.medicalLeave;
 
-        showMessage("response-message", "Leave balance refreshed.");
-
     } catch (error) {
         console.error("Balance error:", error);
-
-        showMessage(
-            "response-message",
-            "Cannot connect to server."
-        );
+        showMessage("response-message", "Could not refresh leave balance.");
     }
 }
 
-// Apply for leave
+// ================= STUDENT APPLY FOR LEAVE =================
+
 async function applyLeave(event) {
     event.preventDefault();
 
-    if (!userId) {
-        showMessage("response-message", "Please log in first.");
+    if (!userId || !authToken || currentRole !== "student") {
+        showMessage(
+            "response-message",
+            "Please login with a Student account."
+        );
         return;
     }
 
     const type = document.getElementById("leave-type").value;
-    const days = Number(document.getElementById("leave-days").value);
+    const startDate = document.getElementById("leave-start-date").value;
+    const endDate = document.getElementById("leave-end-date").value;
+    const reason = document.getElementById("leave-reason").value.trim();
 
-    if (!Number.isInteger(days) || days <= 0) {
+    if (!startDate || !endDate || !reason) {
         showMessage(
             "response-message",
-            "Enter a valid positive number of days."
+            "Please fill in all leave details."
         );
         return;
     }
 
+    if (endDate < startDate) {
+        showMessage(
+            "response-message",
+            "End date cannot be before start date."
+        );
+        return;
+    }
+
+    const submitButton = document.querySelector(
+        '#leave-form button[type="submit"]'
+    );
+
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerText = "Submitting...";
+    }
+
     try {
-        const response = await fetch(`/api/apply-leave/${userId}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                type,
-                days
-            })
-        });
+        const response = await fetch(
+            `${API_URL}/api/apply-leave/${userId}`,
+            {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    type,
+                    startDate,
+                    endDate,
+                    reason
+                })
+            }
+        );
 
         const data = await response.json();
 
@@ -278,49 +418,313 @@ async function applyLeave(event) {
             return;
         }
 
-        document.getElementById("casual-leave-display").innerText =
-            data.casualLeave;
-
-        document.getElementById("medical-leave-display").innerText =
-            data.medicalLeave;
+        document.getElementById("leave-form").reset();
 
         showMessage(
             "response-message",
-            data.message || "Leave application successful."
+            "Leave request submitted successfully. Waiting for Staff approval."
         );
 
-        document.getElementById("leave-form").reset();
+        await loadLeaveHistory();
 
     } catch (error) {
-        console.error("Leave application error:", error);
+        console.error("Apply leave error:", error);
 
         showMessage(
             "response-message",
             "Cannot connect to server."
         );
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerText = "Submit Leave Request";
+        }
     }
 }
 
-// Set up event listeners
+// ================= STUDENT LEAVE HISTORY =================
+
+async function loadLeaveHistory() {
+    if (!userId || !authToken || currentRole !== "student") {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_URL}/api/my-leaves/${userId}`,
+            {
+                headers: getAuthHeaders()
+            }
+        );
+
+        const leaves = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "response-message",
+                leaves.message || "Could not load leave history."
+            );
+            return;
+        }
+
+        const tableBody = document.getElementById("leave-history-body");
+
+        if (!tableBody) return;
+
+        if (!leaves.length) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7">No leave requests found.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML = leaves.map(leave => `
+            <tr>
+                <td>${escapeHTML(leave.leaveType)}</td>
+                <td>${formatDate(leave.startDate)}</td>
+                <td>${formatDate(leave.endDate)}</td>
+                <td>${escapeHTML(leave.days)}</td>
+                <td>${escapeHTML(leave.reason)}</td>
+                <td>${escapeHTML(leave.status)}</td>
+                <td>${formatDate(leave.reviewedAt)}</td>
+            </tr>
+        `).join("");
+
+    } catch (error) {
+        console.error("Leave history error:", error);
+        showMessage("response-message", "Could not load leave history.");
+    }
+}
+
+// ================= STAFF DASHBOARD =================
+
+async function loadStaffDashboard() {
+    if (
+        !authToken ||
+        !["staff", "admin"].includes(currentRole)
+    ) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_URL}/api/staff/dashboard`,
+            {
+                headers: getAuthHeaders()
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "response-message",
+                data.message || "Could not load Staff dashboard."
+            );
+            return;
+        }
+
+        document.getElementById("total-students").innerText =
+            data.stats.totalStudents ?? 0;
+
+        document.getElementById("pending-count").innerText =
+            data.stats.pending ?? 0;
+
+        document.getElementById("approved-count").innerText =
+            data.stats.approved ?? 0;
+
+        document.getElementById("rejected-count").innerText =
+            data.stats.rejected ?? 0;
+
+        renderStudentList(data.students || []);
+        renderStaffLeaveRequests(data.leaves || []);
+
+    } catch (error) {
+        console.error("Staff dashboard error:", error);
+        showMessage("response-message", "Could not load Staff dashboard.");
+    }
+}
+
+// ================= STUDENT DETAILS =================
+
+function renderStudentList(students) {
+    const tableBody = document.getElementById("staff-students-body");
+
+    if (!tableBody) return;
+
+    if (!students.length) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5">No student details found.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = students.map(student => `
+        <tr>
+            <td>${escapeHTML(student.username)}</td>
+            <td>${escapeHTML(student.email)}</td>
+            <td>${escapeHTML(student.rollNumber)}</td>
+            <td>${escapeHTML(student.casualLeave)}</td>
+            <td>${escapeHTML(student.medicalLeave)}</td>
+        </tr>
+    `).join("");
+}
+
+// ================= STAFF LEAVE REQUESTS =================
+
+function renderStaffLeaveRequests(leaves) {
+    const tableBody = document.getElementById("staff-leaves-body");
+
+    if (!tableBody) return;
+
+    if (!leaves.length) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="10">No leave requests found.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = leaves.map(leave => {
+        const student = leave.user || {};
+        const pending = leave.status === "Pending";
+
+        return `
+            <tr>
+                <td>${escapeHTML(student.username || "Unknown")}</td>
+                <td>${escapeHTML(student.rollNumber || "-")}</td>
+                <td>${escapeHTML(leave.leaveType)}</td>
+                <td>${formatDate(leave.startDate)}</td>
+                <td>${formatDate(leave.endDate)}</td>
+                <td>${escapeHTML(leave.days)}</td>
+                <td>${escapeHTML(leave.reason)}</td>
+                <td>${escapeHTML(leave.status)}</td>
+                <td>${formatDate(leave.reviewedAt)}</td>
+                <td>
+                    ${
+                        pending
+                        ? `
+                            <div class="action-buttons">
+                                <button type="button"
+                                    class="btn approve-btn"
+                                    data-leave-id="${escapeHTML(leave._id)}"
+                                    data-status="Approved">
+                                    Approve
+                                </button>
+
+                                <button type="button"
+                                    class="btn reject-btn"
+                                    data-leave-id="${escapeHTML(leave._id)}"
+                                    data-status="Rejected">
+                                    Reject
+                                </button>
+                            </div>
+                        `
+                        : "-"
+                    }
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+// ================= STAFF APPROVE / REJECT =================
+
+async function updateLeaveStatus(leaveId, status) {
+    if (
+        !authToken ||
+        !["staff", "admin"].includes(currentRole)
+    ) {
+        showMessage("response-message", "Staff access only.");
+        return;
+    }
+
+    const confirmed = confirm(
+        `Are you sure you want to ${status.toLowerCase()} this leave request?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(
+            `${API_URL}/api/staff/leaves/${leaveId}/status`,
+            {
+                method: "PATCH",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ status })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showMessage(
+                "response-message",
+                data.message || "Could not update leave status."
+            );
+            return;
+        }
+
+        showMessage(
+            "response-message",
+            data.message || "Leave status updated successfully."
+        );
+
+        await loadStaffDashboard();
+
+    } catch (error) {
+        console.error("Leave approval error:", error);
+        showMessage("response-message", "Cannot connect to server.");
+    }
+}
+
+// ================= EVENT LISTENERS =================
+
 document.addEventListener("DOMContentLoaded", function () {
+
     document.getElementById("registration-form")
-        .addEventListener("submit", registerUser);
+        ?.addEventListener("submit", registerUser);
 
     document.getElementById("login-form")
-        .addEventListener("submit", loginUser);
+        ?.addEventListener("submit", loginUser);
 
     document.getElementById("show-registration")
-        .addEventListener("click", showRegistrationForm);
+        ?.addEventListener("click", showRegistrationForm);
 
     document.getElementById("show-login")
-        .addEventListener("click", showLoginForm);
+        ?.addEventListener("click", showLoginForm);
 
     document.getElementById("refresh-balance")
-        .addEventListener("click", refreshLeaveBalance);
+        ?.addEventListener("click", refreshLeaveBalance);
 
     document.getElementById("logout-button")
-        .addEventListener("click", logoutUser);
+        ?.addEventListener("click", logoutUser);
 
     document.getElementById("leave-form")
-        .addEventListener("submit", applyLeave);
+        ?.addEventListener("submit", applyLeave);
+
+    document.getElementById("refresh-staff")
+        ?.addEventListener("click", loadStaffDashboard);
+
+    // Approve / Reject buttons
+    document.getElementById("staff-leaves-body")
+        ?.addEventListener("click", function (event) {
+
+            const button = event.target.closest(
+                "button[data-leave-id]"
+            );
+
+            if (!button) return;
+
+            updateLeaveStatus(
+                button.dataset.leaveId,
+                button.dataset.status
+            );
+        });
+
 });
