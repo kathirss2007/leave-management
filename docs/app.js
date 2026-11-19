@@ -3,7 +3,7 @@ let userId = null;
 let authToken = null;
 let currentRole = null;
 
-const API_URL = "https://leave-management-1-2w2y.onrender.com";
+const API_URL = "https://leave-management-1-04f6.onrender.com";
 // ================= COMMON FUNCTIONS =================
 
 function showMessage(elementId, message) {
