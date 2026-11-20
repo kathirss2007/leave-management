@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 
 const express = require("express");
@@ -9,10 +10,7 @@ const leaveRoutes = require("./routes/leaveRoutes");
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-// Allow requests from GitHub Pages
-app.use(cors({
-    origin: "https://deepika-s-08.github.io"
-}));
+app.use(cors());
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
